@@ -10,8 +10,8 @@ export const createRecipeValidationShema = {
             errorMessage: "Recipe name must be a string"
         },
         isLength: {
-            options: { min: 3, max: 50 },
-            errorMessage: "Recipe name must be between 3 and 50 characters",
+            options: { min: 3, max: 90 },
+            errorMessage: "Recipe name must be between 3 and 90 characters",
         },
         trim: true // Elimina espacios en blanco al principio y al final
     },

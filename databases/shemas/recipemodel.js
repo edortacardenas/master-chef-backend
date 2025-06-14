@@ -11,7 +11,7 @@ const Recipe = sequelize.define(
             unique: true,
             allowNull: false,
             validate: {
-                len: [3, 50], // Name must be between 3 and 50 characters
+                len: [3, 90], // Name must be between 3 and 50 characters
             },
         },
         ingredients: {
