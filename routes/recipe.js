@@ -147,7 +147,7 @@ router.post(
             // Para otros errores de la API de Hugging Face, enviamos un 502 (Bad Gateway)
             // indicando que el problema fue con un servicio externo.
             return res.status(502).json({
-                message: `Error al comunicarse con el servicio de IA (Hugging Face): ${apiResponse.status}. Detalles: ${errorBodyText.substring(0, 500)}` // Truncar por seguridad
+                message: `Error al comunicarse con el servicio de IA (Hugging Face): ${apiResponse.status}. Detalles: ${errorBodyText}` // Removed truncation for debugging
             });
         }
 
