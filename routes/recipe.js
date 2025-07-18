@@ -91,6 +91,25 @@ router.post(
         }
         formattedPrompt += " [/INST]";
 
+
+        console.log("Sending request to Hugging Face API:");
+        console.log("  URL:", HUGGING_FACE_API_URL);
+        console.log("  Headers:", {
+            'Authorization': `Bearer ${process.env.HF_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+        });
+        console.log("  formattedPrompt:", formattedPrompt);
+        console.log("  Request Body:", JSON.stringify({
+            inputs: formattedPrompt,
+            parameters: {
+                max_new_tokens: max_tokens,
+                return_full_text: false,
+            },
+            options: {
+                wait_for_model: true,
+            }
+        }));
+
         const HUGGING_FACE_API_URL = `https://api-inference.huggingface.co/models/${model}`;
 
         const apiResponse = await fetch(HUGGING_FACE_API_URL, {
