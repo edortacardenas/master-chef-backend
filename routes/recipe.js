@@ -91,25 +91,6 @@ router.post(
         }
         formattedPrompt += " [/INST]";
 
-
-        console.log("Sending request to Hugging Face API:");
-        console.log("  URL:", HUGGING_FACE_API_URL);
-        console.log("  Headers:", {
-            'Authorization': `Bearer ${process.env.HF_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json',
-        });
-        console.log("  formattedPrompt:", formattedPrompt);
-        console.log("  Request Body:", JSON.stringify({
-            inputs: formattedPrompt,
-            parameters: {
-                max_new_tokens: max_tokens,
-                return_full_text: false,
-            },
-            options: {
-                wait_for_model: true,
-            }
-        }));
-
         const HUGGING_FACE_API_URL = `https://api-inference.huggingface.co/models/${model}`;
 
         const apiResponse = await fetch(HUGGING_FACE_API_URL, {
@@ -147,7 +128,7 @@ router.post(
             // Para otros errores de la API de Hugging Face, enviamos un 502 (Bad Gateway)
             // indicando que el problema fue con un servicio externo.
             return res.status(502).json({
-                message: `Error al comunicarse con el servicio de IA (Hugging Face): ${apiResponse.status}. Detalles: ${errorBodyText}` // Removed truncation for debugging
+                message: `Error al comunicarse con el servicio de IA (Hugging Face): ${apiResponse.status}. Detalles: ${errorBodyText.substring(0, 500)}` // Truncar por seguridad
             });
         }
 
@@ -163,7 +144,7 @@ router.post(
     } catch (error) {
         // Este bloque catch ahora maneja errores que no son respuestas directas de la API de HF
         // (ej. fallo en la propia petición fetch, errores de programación aquí, etc.)
-        console.error("Error general al procesar la solicitud de chat completion:", error); // Log the entire error object
+        console.error("Error general al procesar la solicitud de chat completion:", error.message);
         // Asegurarse de no enviar cabeceras si ya se envió una respuesta (por ejemplo, desde el bloque !apiResponse.ok)
         if (!res.headersSent) {
             res.status(500).json({ message: "Error interno del servidor al procesar la solicitud de chat completion." });
