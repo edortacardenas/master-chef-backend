@@ -65,7 +65,7 @@ router.post(
     }
     try {
         const { ingredientsString } = matchedData(req); // Usar datos validados
-        const model = "mistralai/Mistral-7B-Instruct-v0.3"; // Modelo a utilizar
+        const model = "mistralai/Mistral-7B-Instruct-v0.2"; // Modelo a utilizar
         const max_tokens = 1024; // Máximo de tokens para la respuesta
 
         if (!ingredientsString) {
