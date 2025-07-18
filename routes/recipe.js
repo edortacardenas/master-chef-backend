@@ -163,7 +163,7 @@ router.post(
     } catch (error) {
         // Este bloque catch ahora maneja errores que no son respuestas directas de la API de HF
         // (ej. fallo en la propia petición fetch, errores de programación aquí, etc.)
-        console.error("Error general al procesar la solicitud de chat completion:", error.message);
+        console.error("Error general al procesar la solicitud de chat completion:", error); // Log the entire error object
         // Asegurarse de no enviar cabeceras si ya se envió una respuesta (por ejemplo, desde el bloque !apiResponse.ok)
         if (!res.headersSent) {
             res.status(500).json({ message: "Error interno del servidor al procesar la solicitud de chat completion." });
