@@ -24,7 +24,7 @@ console.log('La direccion del frontend es '+ process.env.FRONTEND_URL)
 
 //Configure cors to allow requests from localhost:3000
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",  // Allow requests from this origin
+    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Allow requests from this origin
     credentials: true, //Allow credentials
 }));
 
