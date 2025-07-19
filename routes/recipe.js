@@ -65,7 +65,7 @@ router.post(
     }
     try {
         const { ingredientsString } = matchedData(req); // Usar datos validados
-        const model = process.env.HF_MODEL_ID || "mistralai/Mistral-7B-Instruct-v0.3"; // Modelo a utilizar
+        const model ="mistralai/Mistral-7B-Instruct-v0.3"; // Modelo a utilizar
         const max_tokens = 1024; // Máximo de tokens para la respuesta
 
         if (!ingredientsString) {
@@ -92,6 +92,7 @@ router.post(
         formattedPrompt += " [/INST]";
 
         const HUGGING_FACE_API_URL = `https://api-inference.huggingface.co/models/${model}`;
+        console.log(HUGGING_FACE_API_URL)
 
         const apiResponse = await fetch(HUGGING_FACE_API_URL, {
             method: 'POST',
