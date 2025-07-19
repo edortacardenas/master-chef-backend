@@ -65,7 +65,7 @@ router.post(
     }
     try {
         const { ingredientsString } = matchedData(req); // Usar datos validados
-        const model = "mistralai/Mistral-7B-Instruct-v0.3"; // Modelo a utilizar
+        const model = process.env.HF_MODEL_ID || "mistralai/Mistral-7B-Instruct-v0.3"; // Modelo a utilizar
         const max_tokens = 1024; // Máximo de tokens para la respuesta
 
         if (!ingredientsString) {
@@ -96,7 +96,7 @@ router.post(
         const apiResponse = await fetch(HUGGING_FACE_API_URL, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${process.env.HF_ACCESS_TOKEN}`,
+                Authorization: `Bearer ${process.env.HF_ACCESS_TOKEN}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
