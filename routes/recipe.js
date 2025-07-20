@@ -12,6 +12,7 @@ import { createRecipeValidationShema,
 
 import { Op, fn, col, where } from 'sequelize'; // Import Sequelize operators and functions
 dotenv.config(); // Carga las variables de entorno del archivo .env
+import { InferenceClient } from "@huggingface/inference";
 
 // El token de acceso a Hugging Face se usará en la cabecera de la petición fetch
 
@@ -67,6 +68,7 @@ router.post(
         const { ingredientsString } = matchedData(req); // Usar datos validados
         const model ="mistralai/Mistral-7B-Instruct-v0.3"; // Modelo a utilizar
         const max_tokens = 1024; // Máximo de tokens para la respuesta
+        const hf = new InferenceClient(process.env.HF_ACCESS_TOKEN)
 
         if (!ingredientsString) {
             return res.status(400).json({ message: "Falta 'ingredientsString' en el cuerpo de la solicitud." });
@@ -91,26 +93,25 @@ router.post(
         }
         formattedPrompt += " [/INST]";
 
-        const HUGGING_FACE_API_URL = `https://api-inference.huggingface.co/models/${model}`;
-        console.log(HUGGING_FACE_API_URL)
-
-        const apiResponse = await fetch(HUGGING_FACE_API_URL, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${process.env.HF_ACCESS_TOKEN}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                inputs: formattedPrompt,
+        //const HUGGING_FACE_API_URL = `https://api-inference.huggingface.co/models/${model}`;
+        
+        const apiResponse = await hf.chatCompletion({
+            model: "mistralai/Mistral-7B-Instruct-v0.3",
+            messages: [
+                { role: "system", content: SYSTEM_PROMPT_BACKEND },
+                { role: "user", content: `I have ${ingredientsString}. Please give me a recipe you'd recommend I make!` },
+            ],
+            inputs: formattedPrompt,
                 parameters: {
                     max_new_tokens: max_tokens,
                     return_full_text: false, // Para obtener solo la respuesta generada
                 },
-                options: {
-                    wait_for_model: true, // Esperar a que el modelo esté listo
-                }
-            }),
+            max_tokens: 1024,
+            options: {
+                wait_for_model: true, // Esperar a que el modelo esté listo
+            }
         });
+
 
         if (!apiResponse.ok) {
             const errorBodyText = await apiResponse.text();
