@@ -55,7 +55,7 @@ Please provide the recipe in English.`;
 
 const router = Router()
 
-
+console.log("Iniciando el router de recetas...")
 // Endpoint específico para chat completion de recetas con validación
 router.post(
     '/hf-chat-completion',
@@ -89,34 +89,38 @@ router.post(
        const recipe = apiResponse.choices[0].message.content;
 
         if (!apiResponse.ok) {
-            const errorBodyText = await apiResponse.text();
-            console.error(`Error de la API de Hugging Face: ${apiResponse.status}`, errorBodyText);
+            const errorBodyText = apiResponse.choices[0].message.content || "No error details provided";
+            const hasRecipeContent = errorBodyText.trim().startsWith("## Title"); // Basic content check
 
-            // Si el error es específicamente un 402 de Hugging Face (créditos excedidos)
-            if (apiResponse.status === 402) {
-                // Enviamos un estado 402 al frontend y un mensaje que helpers.ts pueda parsear.
-                // El frontend (helpers.ts) espera que el campo 'message' contenga el string '{"error":"..."}'
-                // para extraer el detalle del error de Hugging Face.
-                return res.status(402).json({
-                    message: `La API de Hugging Face devolvió un error ${apiResponse.status}: ${errorBodyText}`
+            // Modified error handling with content check
+            if (hasRecipeContent) {
+                console.warn("Hugging Face API returned an error status but included recipe content:", { status: apiResponse.status, data: apiResponse });
+                // Treat as a partial success, returning the content with a warning for frontend
+                return res.status(200).json({ recipe: errorBodyText, warning: "La API de Hugging Face indicó un error pero devolvió una receta parcial." });
+            } else {
+                // Log the FULL apiResponse object for true error cases
+                console.error("Error from Hugging Face API (no usable content):", { status: apiResponse.status, data: apiResponse });
+
+                // (Rest of your original error handling logic remains mostly the same, but with the "Unknown" fallback improved)
+                // Si el error es específicamente un 402 de Hugging Face (créditos excedidos)
+                if (apiResponse.status === 402) { // This might still need adjustment
+                    return res.status(402).json({ message: `La API de Hugging Face devolvió un error ${apiResponse.status || 'Unknown'}: ${errorBodyText}` });
+                }
+
+                return res.status(502).json({
+                    message: `Error al comunicarse con el servicio de IA (Hugging Face): ${apiResponse.status || 'Unknown'}. Detalles: ${errorBodyText.substring(0, 500)}`
                 });
             }
-
-            // Para otros errores de la API de Hugging Face, enviamos un 502 (Bad Gateway)
-            // indicando que el problema fue con un servicio externo.
-            return res.status(502).json({
-                message: `Error al comunicarse con el servicio de IA (Hugging Face): ${apiResponse.status}. Detalles: ${errorBodyText.substring(0, 500)}` // Truncar por seguridad
-            });
         }
 
-       res.json({ recipe: recipe });
+       res.json({ recipe });
    } catch (error) {
         console.error("Error general al procesar la solicitud de chat completion:", error.message);
         // Asegurarse de no enviar cabeceras si ya se envió una respuesta (por ejemplo, desde el bloque !apiResponse.ok)
         if (!res.headersSent) {
             res.status(500).json({ message: "Error interno del servidor al procesar la solicitud de chat completion." });
         }
-    }
+   }
 });
 
 //Endpoint para guardar la receta en la base de datos
@@ -249,5 +253,10 @@ router.delete(
     }
 );
 */
+// Endpoint para verificar la recepción de solicitudes del frontend
+router.get('/ping', (req, res) => {
+    console.log('Solicitud PING recibida del frontend');
+    res.status(200).json({ message: 'Backend activo y respondiendo' });
+});
 
 export default router;

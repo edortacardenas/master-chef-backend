@@ -74,7 +74,7 @@ app.use(routes) //Defining the routes that came from the routes file
 
 
 //Run Server
-app.listen(port, () => {
+app.listen(port, () => { // Explicitly listen on all interfaces
     console.log(`Listening on port ${port}`);
 });
 
