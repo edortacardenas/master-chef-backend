@@ -77,34 +77,16 @@ router.post(
             return res.status(400).json({ message: "Falta 'ingredientsString' en el cuerpo de la solicitud." });
         }
 
-        let formattedPrompt = "<s>[INST] ";
-        const systemMessage = messages.find(m => m.role === "system");
-        const userMessage = messages.find(m => m.role === "user");
+       const apiResponse = await hf.chatCompletion({
+           model: "mistralai/Mistral-7B-Instruct-v0.3",
+           messages: [
+               { role: "system", content: SYSTEM_PROMPT_BACKEND },
+               { role: "user", content: `I have ${ingredientsString}. Please give me a recipe you'd recommend I make!` },
+           ],
+           max_tokens: max_tokens,
+       });
 
-        if (systemMessage) {
-            formattedPrompt += systemMessage.content.trim() + " ";
-        }
-        if (userMessage) {
-            formattedPrompt += userMessage.content.trim();
-        }
-        formattedPrompt += " [/INST]";
-
-        //const HUGGING_FACE_API_URL = `https://api-inference.huggingface.co/models/${model}`;
-        
-        const apiResponse = await hf.chatCompletion({
-            model: "mistralai/Mistral-7B-Instruct-v0.3",
-            messages: [
-                { role: "system", content: SYSTEM_PROMPT_BACKEND },
-                { role: "user", content: `I have ${ingredientsString}. Please give me a recipe you'd recommend I make!` },
-            ],
-            inputs: formattedPrompt,
-                parameters: {
-                    max_new_tokens: max_tokens,
-                    return_full_text: false, // Para obtener solo la respuesta generada
-                },
-            max_tokens: 1024,
-        });
-
+       const recipe = apiResponse.choices[0].message.content;
 
         if (!apiResponse.ok) {
             const errorBodyText = await apiResponse.text();
@@ -127,18 +109,8 @@ router.post(
             });
         }
 
-        const responseData = await apiResponse.json();
-        // La respuesta típica para text-generation es un array con un objeto: [{ "generated_text": "..." }]
-        if (responseData && responseData.length > 0 && responseData[0].generated_text) {
-            res.json({ recipe: responseData[0].generated_text });
-        } else {
-            console.error("Respuesta inesperada de Hugging Face:", responseData);
-            res.status(500).json({ message: "Respuesta inesperada de la API de Hugging Face." });
-        }
-
-    } catch (error) {
-        // Este bloque catch ahora maneja errores que no son respuestas directas de la API de HF
-        // (ej. fallo en la propia petición fetch, errores de programación aquí, etc.)
+       res.json({ recipe: recipe });
+   } catch (error) {
         console.error("Error general al procesar la solicitud de chat completion:", error.message);
         // Asegurarse de no enviar cabeceras si ya se envió una respuesta (por ejemplo, desde el bloque !apiResponse.ok)
         if (!res.headersSent) {
@@ -165,7 +137,7 @@ router.post(
             instructions: validatedData.instructions,
         });
 
-        res.status(201).json({ message: "Receta guardada exitosamente"});
+        res.status(201).json({ message: "Receta guardada exitosamente" });
     } catch (error) {
         console.error("Error al guardar la receta:", error);
         res.status(500).json({ message: "Error interno del servidor al guardar la receta.", error: error.message });
