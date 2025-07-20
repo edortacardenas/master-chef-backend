@@ -56,7 +56,7 @@ const router = Router()
 
 // Endpoint específico para chat completion de recetas con validación
 router.post(
-    '/hf-chat-completion',
+    '/api/hf-chat-completion',  // **1. Ensure the route is prefixed with `/api`**
     checkSchema(chatCompletionValidationSchema), // Aplicar el esquema de validación
     async (req, res) => {
     const errors = validationResult(req);
@@ -69,7 +69,7 @@ router.post(
         const model ="mistralai/Mistral-7B-Instruct-v0.3"; // Modelo a utilizar
         const max_tokens = 1024; // Máximo de tokens para la respuesta
         const hf = new InferenceClient(process.env.HF_ACCESS_TOKEN)
-
+        
         if (!ingredientsString) {
             return res.status(400).json({ message: "Falta 'ingredientsString' en el cuerpo de la solicitud." });
         }
@@ -80,20 +80,6 @@ router.post(
             { role: "system", content: SYSTEM_PROMPT_BACKEND },
             { role: "user", content: `I have ${ingredientsString}. Please give me a recipe you'd recommend I make!` },
         ];
-
-        let formattedPrompt = "<s>[INST] ";
-        const systemMessage = messages.find(m => m.role === "system");
-        const userMessage = messages.find(m => m.role === "user");
-
-        if (systemMessage) {
-            formattedPrompt += systemMessage.content.trim() + " ";
-        }
-        if (userMessage) {
-            formattedPrompt += userMessage.content.trim();
-        }
-        formattedPrompt += " [/INST]";
-
-        //const HUGGING_FACE_API_URL = `https://api-inference.huggingface.co/models/${model}`;
         
         const apiResponse = await hf.chatCompletion({
             model: "mistralai/Mistral-7B-Instruct-v0.3",
@@ -101,15 +87,7 @@ router.post(
                 { role: "system", content: SYSTEM_PROMPT_BACKEND },
                 { role: "user", content: `I have ${ingredientsString}. Please give me a recipe you'd recommend I make!` },
             ],
-            inputs: formattedPrompt,
-                parameters: {
-                    max_new_tokens: max_tokens,
-                    return_full_text: false, // Para obtener solo la respuesta generada
-                },
             max_tokens: 1024,
-            options: {
-                wait_for_model: true, // Esperar a que el modelo esté listo
-            }
         });
 
 
@@ -119,9 +97,6 @@ router.post(
 
             // Si el error es específicamente un 402 de Hugging Face (créditos excedidos)
             if (apiResponse.status === 402) {
-                // Enviamos un estado 402 al frontend y un mensaje que helpers.ts pueda parsear.
-                // El frontend (helpers.ts) espera que el campo 'message' contenga el string '{"error":"..."}'
-                // para extraer el detalle del error de Hugging Face.
                 return res.status(402).json({
                     message: `La API de Hugging Face devolvió un error ${apiResponse.status}: ${errorBodyText}`
                 });
@@ -131,19 +106,19 @@ router.post(
             // indicando que el problema fue con un servicio externo.
             return res.status(502).json({
                 message: `Error al comunicarse con el servicio de IA (Hugging Face): ${apiResponse.status}. Detalles: ${errorBodyText.substring(0, 500)}` // Truncar por seguridad
-            });
+            ,
+            inputs: formattedPrompt,
+                parameters: {
+                    max_new_tokens: max_tokens,
+                    return_full_text: false, // Para obtener solo la respuesta generada
+                },
+            max_tokens: 1024,
+        });
+
         }
 
-        const responseData = await apiResponse.json();
-        // La respuesta típica para text-generation es un array con un objeto: [{ "generated_text": "..." }]
-        if (responseData && responseData.length > 0 && responseData[0].generated_text) {
-            res.json({ recipe: responseData[0].generated_text });
-        } else {
-            console.error("Respuesta inesperada de Hugging Face:", responseData);
-            res.status(500).json({ message: "Respuesta inesperada de la API de Hugging Face." });
-        }
-
-    } catch (error) {
+        } 
+    catch (error) {
         // Este bloque catch ahora maneja errores que no son respuestas directas de la API de HF
         // (ej. fallo en la propia petición fetch, errores de programación aquí, etc.)
         console.error("Error general al procesar la solicitud de chat completion:", error.message);
