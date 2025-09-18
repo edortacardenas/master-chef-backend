@@ -10,8 +10,8 @@ export const createRecipeValidationShema = {
             errorMessage: "Recipe name must be a string"
         },
         isLength: {
-            options: { min: 3, max: 90 },
-            errorMessage: "Recipe name must be between 3 and 90 characters",
+            options: { min: 3, max: 100 },
+            errorMessage: "Recipe name must be between 3 and 100 characters",
         },
         trim: true // Elimina espacios en blanco al principio y al final
     },
@@ -27,6 +27,7 @@ export const createRecipeValidationShema = {
         custom: {
             options: (value) => {
                 if (!Array.isArray(value)) return false; // Ya cubierto por isArray, pero por seguridad
+                // The `isArray` check is already handled by the validator chain, making this line redundant.
                 return value.every(item => typeof item === 'string' && item.trim().length > 0);
             },
             errorMessage: "All ingredients must be non-empty strings."
